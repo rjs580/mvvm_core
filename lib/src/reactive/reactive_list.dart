@@ -338,6 +338,8 @@ class ReactiveList<E> extends ReactiveProperty<List<E>> implements List<E> {
   /// ```
   @override
   void addAll(Iterable<E> iterable) {
+    if (iterable.isEmpty) return;
+
     _list.addAll(iterable);
     notifyListeners();
   }

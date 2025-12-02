@@ -213,6 +213,29 @@ class ReactiveFuture<T> extends ReactiveProperty<AsyncState<T>> {
 
   AsyncState<T> _state;
 
+  /// Tracks the current execution ID for handling rapid successive calls.
+  ///
+  /// Each call to [run] increments this counter. When an async operation
+  /// completes, it checks if its ID matches the current [_runId]. If not,
+  /// the result is discarded because a newer operation was started.
+  ///
+  /// This implements a "last call wins" pattern, which is essential for:
+  /// - Search-as-you-type (only show results for the latest query)
+  /// - Rapid refresh (ignore stale data from earlier refreshes)
+  /// - Debounced operations (prevent race conditions)
+  ///
+  /// Note: Overflow is not a concern. Even at 1000 calls/second, it would
+  /// take over 285,000 years to overflow on web (the more limited platform).
+  ///
+  /// Example scenario:
+  /// ```
+  /// run() called -> _runId = 1 -> starts slow API call
+  /// run() called -> _runId = 2 -> starts fast API call
+  /// Fast call completes -> _runId == 2 ✓ -> state updated
+  /// Slow call completes -> _runId != 1 ✗ -> result discarded
+  /// ```
+  int _runId = 0;
+
   /// The current [AsyncState] of this reactive future.
   ///
   /// Use this to access the full state object for pattern matching
@@ -301,18 +324,30 @@ class ReactiveFuture<T> extends ReactiveProperty<AsyncState<T>> {
   /// // During loading: user.data still returns previous value
   /// ```
   Future<T?> run(Future<T> Function() futureFactory) async {
+    final currentRunId = ++_runId;
+
     final previousData = _state.dataOrNull;
     _state = AsyncLoading<T>(previousData);
     notifyListeners();
 
     try {
       final result = await futureFactory();
-      _state = AsyncData<T>(result);
-      notifyListeners();
-      return result;
+
+      // Only update if this is still the current run
+      if (currentRunId == _runId) {
+        _state = AsyncData<T>(result);
+        notifyListeners();
+        return result;
+      }
+
+      return null;
     } catch (e, s) {
-      _state = AsyncError<T>(e, s, previousData);
-      notifyListeners();
+      // Only update if this is still the current run
+      if (currentRunId == _runId) {
+        _state = AsyncError<T>(e, s, previousData);
+        notifyListeners();
+      }
+
       return null;
     }
   }
