@@ -1,39 +1,25 @@
-<!--
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# MVVM Core
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages).
+A lightweight, powerful MVVM state management library for Flutter.
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages).
--->
+See [packages/mvvm_core](packages/mvvm_core) for the main package.
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
-
-## Features
-
-TODO: List what your package can do. Maybe include images, gifs, or videos.
-
-## Getting started
-
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
-
-## Usage
-
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
-
-```dart
-const like = 'sample';
+## Repository Structure
+```text
+packages/
+├── mvvm_core/ # Main package (published to pub.dev)
+└── mvvm_core_devtools_extension/ # DevTools extension source
+example/ # Example app
 ```
 
-## Additional information
+## Development
 
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+### Build DevTools Extension
+
+```bash
+cd packages/mvvm_core_devtools_extension
+flutter pub get
+dart run devtools_extensions build_and_copy \
+  --source=. \
+  --dest=../mvvm_core/extension/devtools
+```

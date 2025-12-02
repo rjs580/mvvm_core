@@ -29,3 +29,7 @@ migrate_working_dir/
 .flutter-plugins-dependencies
 /build/
 /coverage/
+
+# DevTools extension build output
+packages/mvvm_core/extension/devtools/build/*
+!packages/mvvm_core/extension/devtools/build/.gitkeep

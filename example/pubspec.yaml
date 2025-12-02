@@ -9,7 +9,7 @@ dependencies:
   flutter:
     sdk: flutter
   mvvm_core:
-    path: ../
+    path: ../packages/mvvm_core
 
 dev_dependencies:
   flutter_test:

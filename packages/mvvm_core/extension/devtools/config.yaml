@@ -1,0 +1,5 @@
+name: mvvm_core
+issueTracker: https://github.com/rjs580/mvvm_core/issues
+version: 1.0.0
+materialIconCodePoint: '0xe3e4'
+requiresConnection: true

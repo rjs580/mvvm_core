@@ -1,0 +1,20 @@
+name: mvvm_core_devtools_extension
+description: DevTools extension UI for mvvm_core.
+publish_to: 'none'
+
+environment:
+  sdk: ^3.10.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  devtools_extensions: ^0.4.0
+  devtools_app_shared: ^0.4.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
