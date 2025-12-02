@@ -1,16 +1,28 @@
-# example
+# MVVM Core Example
 
-A new Flutter project.
+This example demonstrates the usage of the `mvvm_core` package.
 
-## Getting Started
+## Running the Example
 
-This project is a starting point for a Flutter application.
+```bash
+cd example && flutter pub get && flutter run
+```
 
-A few resources to get you started if this is your first Flutter project:
+## Examples Included
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### 1. Counter
+Basic usage of `Reactive<T>` for simple state management.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### 2. Todo List
+Demonstrates `ReactiveList<T>` with:
+- Adding/removing items
+- Toggling item state
+- Selective rebuilds with `select()`
+- Batch operations
+
+### 3. Async Data
+Shows `ReactiveFuture<T>` with:
+- Loading states
+- Error handling
+- Data display
+- Refresh functionality
