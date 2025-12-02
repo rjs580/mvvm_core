@@ -18,8 +18,12 @@ example/ # Example app
 
 ```bash
 cd packages/mvvm_core_devtools_extension
+```
+
+```bash
 flutter pub get
-dart run devtools_extensions build_and_copy \
-  --source=. \
-  --dest=../mvvm_core/extension/devtools
+```
+
+```bash
+dart run devtools_extensions build_and_copy --source=. --dest=../mvvm_core/extension/devtools
 ```

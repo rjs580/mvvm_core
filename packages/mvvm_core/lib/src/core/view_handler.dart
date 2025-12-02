@@ -190,7 +190,6 @@ typedef PopInvokedContextWithResultCallback<T> =
 /// See also:
 ///
 /// * [ViewModel], the base class for all view models.
-/// * [ViewElement], the element that manages the view-viewmodel binding.
 /// * [PopScope], the Flutter widget used for navigation control.
 abstract class ViewHandler<T extends ViewModel> extends Widget {
   /// Creates a [ViewHandler].
@@ -325,12 +324,12 @@ abstract class ViewHandler<T extends ViewModel> extends Widget {
   void dispose(T viewModel) {}
 
   @override
-  ViewElement<T> createElement() => ViewElement<T>(this);
+  Element createElement() => _ViewElement<T>(this);
 }
 
 /// The [Element] that manages the lifecycle and rebuilding of a [ViewHandler].
 ///
-/// [ViewElement] is responsible for:
+/// [_ViewElement] is responsible for:
 /// - Creating and storing the [ViewModel] instance
 /// - Calling lifecycle methods ([init], [dispose]) at appropriate times
 /// - Rebuilding the view when the [ViewModel] notifies listeners
@@ -343,9 +342,9 @@ abstract class ViewHandler<T extends ViewModel> extends Widget {
 ///
 /// * [ViewHandler], the widget that uses this element.
 /// * [ComponentElement], the base class for elements that build other widgets.
-class ViewElement<T extends ViewModel> extends ComponentElement {
-  /// Creates a [ViewElement] for the given [ViewHandler].
-  ViewElement(super.widget);
+class _ViewElement<T extends ViewModel> extends ComponentElement {
+  /// Creates a [_ViewElement] for the given [ViewHandler].
+  _ViewElement(super.widget);
 
   T? _viewModel;
   bool _initialized = false;

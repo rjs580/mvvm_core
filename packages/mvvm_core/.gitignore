@@ -31,5 +31,5 @@ migrate_working_dir/
 /coverage/
 
 # DevTools extension build output
-packages/mvvm_core/extension/devtools/build/*
-!packages/mvvm_core/extension/devtools/build/.gitkeep
+extension/devtools/build/*
+!extension/devtools/build/.gitkeep

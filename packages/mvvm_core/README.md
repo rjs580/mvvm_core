@@ -6,10 +6,6 @@
 
 A simple yet powerful MVVM state management library for Flutter. Built on Flutter's native primitives with zero external dependencies.
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/rjs580/mvvm_core/main/assets/mvvm_architecture.png" alt="MVVM Architecture" width="600"/>
-</p>
-
 ---
 
 ## ✨ Features
@@ -392,14 +388,7 @@ Inspect your ViewModels in real-time with the built-in DevTools extension.
 
 ### Setup
 
-1. Initialize in your app's `main()`:
-```dart
-void main() {
-  MvvmDevToolsExtension.init();
-  runApp(const MyApp());
-}
-```
-2. Override `debugFillProperties` in your ViewModels:
+1. Override `debugFillProperties` in your ViewModels:
 ```dart
 class MyViewModel extends ViewModel {
   final count = Reactive<int>(0);
@@ -413,11 +402,7 @@ class MyViewModel extends ViewModel {
   }
 }
 ```
-3. Open DevTools and look for the **MVVM Core** tab!
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/rjs580/mvvm_core/main/assets/devtools_screenshot.png" alt="DevTools Extension" width="700"/>
-</p>
+2. Open DevTools and look for the **MVVM Core** tab!
 
 ---
 
@@ -694,15 +679,10 @@ See the [API documentation](https://pub.dev/documentation/mvvm_core/latest/) for
 
 ---
 
-## 📝 License
+## 💡 Contributions
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 🙏 Acknowledgments
-
-- Inspired by the simplicity of Provider and the power of Bloc
+- Want to help? Open an issue or submit a pull request!
+- Improve the docs, add new features, or fix bugs
 - Built with ❤️ for the Flutter community
 
 ---

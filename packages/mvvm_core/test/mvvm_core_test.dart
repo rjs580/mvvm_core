@@ -16,7 +16,6 @@ void main() {
       // Verify core classes are exported
       expect(ViewModel, isNotNull);
       expect(ViewHandler, isNotNull);
-      expect(ViewElement, isNotNull);
     });
 
     test('exports reactive primitives', () {

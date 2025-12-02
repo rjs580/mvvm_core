@@ -6,46 +6,49 @@ import 'package:mvvm_core/mvvm_core.dart';
 
 /// Provides DevTools integration for mvvm_core.
 ///
-/// Call [MvvmDevToolsExtension.init] in your app's main() to enable
-/// ViewModel inspection in DevTools.
-///
-/// ```dart
-/// void main() {
-///   MvvmDevToolsExtension.init();
-///   runApp(MyApp());
-/// }
-/// ```
+/// The extension automatically initializes in debug mode when the first
+/// ViewModel is registered. No manual initialization is required.
 class MvvmDevToolsExtension {
   MvvmDevToolsExtension._();
 
   static bool _initialized = false;
-  static final Map<int, WeakReference<ViewModel>> _viewModels = {};
+  static final Map<int, _ViewModelEntry> _viewModels = {};
   static int _nextId = 0;
 
-  /// Initializes the DevTools extension.
-  ///
-  /// Call this in your app's main() before runApp().
-  /// Only works in debug mode.
-  static void init() {
-    // Only initialize once and only in debug mode
-    if (_initialized || !kDebugMode) return;
-    _initialized = true;
-
-    _registerServiceExtensions();
-  }
-
-  /// Registers a ViewModel for inspection in DevTools.
+  /// Auto-initializes if needed and registers a ViewModel for inspection.
   static int registerViewModel(ViewModel viewModel) {
-    if (!_initialized) return -1;
+    // Auto-initialize on first registration (debug mode only)
+    if (!kDebugMode) return -1;
+
+    if (!_initialized) {
+      _initialized = true;
+      _registerServiceExtensions();
+    }
 
     final id = _nextId++;
-    _viewModels[id] = WeakReference(viewModel);
+    final entry = _ViewModelEntry(viewModel, id);
+    _viewModels[id] = entry;
+
+    // Post an event so DevTools knows to refresh
+    _postUpdateEvent();
+
     return id;
   }
 
   /// Unregisters a ViewModel when it's disposed.
   static void unregisterViewModel(int id) {
-    _viewModels.remove(id);
+    if (id == -1) return;
+    final entry = _viewModels.remove(id);
+    entry?.dispose();
+    _postUpdateEvent();
+  }
+
+  /// Posts an event that the DevTools extension can listen to.
+  static void _postUpdateEvent({int? viewModelId}) {
+    postEvent('ext.mvvm_core.update', {
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+      if (viewModelId != null) 'viewModelId': viewModelId,
+    });
   }
 
   /// Registers the service extensions that DevTools can call.
@@ -57,7 +60,7 @@ class MvvmDevToolsExtension {
       final viewModelData = <Map<String, dynamic>>[];
 
       for (final entry in _viewModels.entries) {
-        final vm = entry.value.target;
+        final vm = entry.value.viewModel.target;
         if (vm != null) {
           viewModelData.add(_serializeViewModel(entry.key, vm));
         }
@@ -86,7 +89,7 @@ class MvvmDevToolsExtension {
         );
       }
 
-      final vm = _viewModels[id]?.target;
+      final vm = _viewModels[id]?.viewModel.target;
       if (vm == null) {
         return ServiceExtensionResponse.error(
           ServiceExtensionResponse.extensionError,
@@ -102,7 +105,16 @@ class MvvmDevToolsExtension {
 
   /// Removes references to disposed ViewModels.
   static void _cleanupDisposedViewModels() {
-    _viewModels.removeWhere((key, ref) => ref.target == null);
+    final toRemove = <int>[];
+    for (final entry in _viewModels.entries) {
+      if (entry.value.viewModel.target == null) {
+        entry.value.dispose();
+        toRemove.add(entry.key);
+      }
+    }
+    for (final id in toRemove) {
+      _viewModels.remove(id);
+    }
   }
 
   /// Converts a ViewModel to a JSON-serializable map.
@@ -120,17 +132,7 @@ class MvvmDevToolsExtension {
     for (final prop in builder.properties) {
       if (prop.name == null) continue;
 
-      final propData = <String, dynamic>{
-        'name': prop.name,
-        'type': _getPropertyType(prop),
-        'value': _getPropertyValue(prop),
-      };
-
-      if (detailed) {
-        propData['description'] = prop.toDescription();
-      }
-
-      properties.add(propData);
+      properties.add(_serializeProperty(prop, detailed: detailed));
     }
 
     return {
@@ -139,6 +141,79 @@ class MvvmDevToolsExtension {
       'mounted': vm.mounted,
       'properties': properties,
     };
+  }
+
+  static Map<String, dynamic> _serializeProperty(
+    DiagnosticsNode prop, {
+    bool detailed = false,
+  }) {
+    final propData = <String, dynamic>{
+      'name': prop.name,
+      'type': _getPropertyType(prop),
+      'value': _getPropertyValue(prop),
+    };
+
+    if (detailed) {
+      propData['description'] = prop.toDescription();
+
+      // Add collection items for detailed view
+      if (prop is DiagnosticsProperty) {
+        final value = prop.value;
+        if (value is ReactiveList) {
+          propData['items'] = _serializeList(value.value);
+        } else if (value is ReactiveMap) {
+          propData['entries'] = _serializeMap(value.value);
+        } else if (value is ReactiveSet) {
+          propData['items'] = _serializeSet(value.value);
+        } else if (value is List) {
+          propData['items'] = _serializeList(value);
+        } else if (value is Map) {
+          propData['entries'] = _serializeMap(value);
+        } else if (value is Set) {
+          propData['items'] = _serializeSet(value);
+        }
+      }
+    }
+
+    return propData;
+  }
+
+  static List<Map<String, dynamic>> _serializeList(List list) {
+    return list
+        .asMap()
+        .entries
+        .map(
+          (e) => {
+            'index': e.key,
+            'value': _truncate(e.value.toString(), 100),
+            'type': e.value.runtimeType.toString(),
+          },
+        )
+        .toList();
+  }
+
+  static List<Map<String, dynamic>> _serializeMap(Map map) {
+    return map.entries
+        .map(
+          (e) => {
+            'key': _truncate(e.key.toString(), 50),
+            'value': _truncate(e.value.toString(), 100),
+            'keyType': e.key.runtimeType.toString(),
+            'valueType': e.value.runtimeType.toString(),
+          },
+        )
+        .toList();
+  }
+
+  static List<Map<String, dynamic>> _serializeSet(Set set) {
+    return set
+        .map(
+          (e) => {
+            'value': _truncate(e.toString(), 100),
+            'type': e.runtimeType.toString(),
+          },
+        )
+        .toList();
   }
 
   static String _getPropertyType(DiagnosticsNode prop) {
@@ -195,5 +270,67 @@ class MvvmDevToolsExtension {
   static String _truncate(String str, [int maxLength = 50]) {
     if (str.length <= maxLength) return str;
     return '${str.substring(0, maxLength)}...';
+  }
+}
+
+/// Internal class to manage ViewModel and its ReactiveProperty listeners.
+class _ViewModelEntry {
+  _ViewModelEntry(ViewModel vm, this.id) : viewModel = WeakReference(vm) {
+    _setupListeners(vm);
+  }
+
+  final WeakReference<ViewModel> viewModel;
+  final int id;
+  final List<_ListenerRegistration> _listeners = [];
+
+  void _setupListeners(ViewModel vm) {
+    // Listen to ViewModel changes
+    void onViewModelChanged() {
+      MvvmDevToolsExtension._postUpdateEvent(viewModelId: id);
+    }
+
+    vm.addListener(onViewModelChanged);
+    _listeners.add(_ListenerRegistration(vm, onViewModelChanged));
+
+    // Find and listen to all ReactiveProperty instances
+    final builder = DiagnosticPropertiesBuilder();
+    vm.debugFillProperties(builder);
+
+    for (final prop in builder.properties) {
+      if (prop is DiagnosticsProperty) {
+        final value = prop.value;
+        if (value is ReactiveProperty) {
+          void onPropertyChanged() {
+            MvvmDevToolsExtension._postUpdateEvent(viewModelId: id);
+          }
+
+          value.addListener(onPropertyChanged);
+          _listeners.add(_ListenerRegistration(value, onPropertyChanged));
+        }
+      }
+    }
+  }
+
+  void dispose() {
+    for (final registration in _listeners) {
+      registration.removeListener();
+    }
+    _listeners.clear();
+  }
+}
+
+/// Holds a reference to a Listenable and its callback for cleanup.
+class _ListenerRegistration {
+  _ListenerRegistration(this.listenable, this.callback);
+
+  final Listenable listenable;
+  final VoidCallback callback;
+
+  void removeListener() {
+    try {
+      listenable.removeListener(callback);
+    } catch (_) {
+      // Listenable may already be disposed
+    }
   }
 }
