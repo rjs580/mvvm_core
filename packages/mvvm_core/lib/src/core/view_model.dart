@@ -173,6 +173,11 @@ import 'package:flutter/material.dart';
 /// - Clean up resources (subscriptions, timers) in [dispose]
 /// - Override [debugFillProperties] for better debugging experience
 ///
+/// **Note:** [ReactiveStream] should always be disposed to cancel its
+/// subscription. Other reactive properties ([Reactive], [ReactiveFuture],
+/// [ReactiveList], etc.) will be garbage collected automatically, but
+/// disposing them explicitly is good practice for long-lived ViewModels.
+///
 /// See also:
 ///
 /// * [ViewHandler], the widget that binds ViewModels to views.

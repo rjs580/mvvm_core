@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:mvvm_core/mvvm_core.dart';
 
 void main() {
+  MvvmDevToolsExtension.init();
   runApp(const MyApp());
 }
 

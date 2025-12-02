@@ -17,7 +17,24 @@ class _ExtensionHomeState extends State<ExtensionHome> {
   @override
   void initState() {
     super.initState();
-    _loadViewModels();
+
+    // Wait for the service connection to be ready
+    _waitForServiceAndLoad();
+  }
+
+  Future<void> _waitForServiceAndLoad() async {
+    // Wait until the service manager is connected
+    await serviceManager.onServiceAvailable;
+
+    // Also wait for the main isolate to be available
+    final isolateManager = serviceManager.isolateManager;
+    while (isolateManager.mainIsolate.value == null) {
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+
+    if (mounted) {
+      _loadViewModels();
+    }
   }
 
   Future<void> _loadViewModels() async {
@@ -27,10 +44,21 @@ class _ExtensionHomeState extends State<ExtensionHome> {
     });
 
     try {
-      // Use serviceManager.service to access the VmService
-      final response = await serviceManager.service!.callServiceExtension(
+      final service = serviceManager.service;
+      final isolateId = serviceManager.isolateManager.mainIsolate.value?.id;
+
+      if (service == null || isolateId == null) {
+        setState(() {
+          _error =
+              'Service not connected. Please ensure the target app is running.';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final response = await service.callServiceExtension(
         'ext.mvvm_core.getViewModels',
-        isolateId: serviceManager.isolateManager.mainIsolate.value!.id,
+        isolateId: isolateId,
       );
 
       if (response.json != null) {
@@ -50,9 +78,14 @@ class _ExtensionHomeState extends State<ExtensionHome> {
 
   Future<void> _selectViewModel(Map<String, dynamic> vm) async {
     try {
-      final response = await serviceManager.service!.callServiceExtension(
+      final service = serviceManager.service;
+      final isolateId = serviceManager.isolateManager.mainIsolate.value?.id;
+
+      if (service == null || isolateId == null) return;
+
+      final response = await service.callServiceExtension(
         'ext.mvvm_core.getViewModel',
-        isolateId: serviceManager.isolateManager.mainIsolate.value!.id,
+        isolateId: isolateId,
         args: {'id': vm['id'].toString()},
       );
 

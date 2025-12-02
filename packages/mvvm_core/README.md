@@ -49,6 +49,12 @@ class CounterViewModel extends ViewModel {
   void increment() => count.value++;
 
   void decrement() => count.value--;
+  
+  @override
+  void dispose() {
+    count.dispose();
+    super.dispose();
+  }
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
@@ -58,41 +64,46 @@ class CounterViewModel extends ViewModel {
 }
 ```
 ### 2. Create a View
+
 ```dart
 class CounterView extends ViewHandler<CounterViewModel> {
-const CounterView({super.key});
+  const CounterView({super.key});
 
-@override
-CounterViewModel viewModelFactory() => CounterViewModel();
+  @override
+  CounterViewModel viewModelFactory() => CounterViewModel();
 
-@override
-Widget build(BuildContext context, CounterViewModel vm, Widget? child) {
-return Scaffold(
-appBar: AppBar(title: const Text('Counter')),
-body: Center(
-child: vm.count.listen(
-builder: (context, count, _) => Text(
-'$count',
-style: Theme.of(context).textTheme.displayLarge,
-),
-),
-),
-floatingActionButton: Column(
-mainAxisSize: MainAxisSize.min,
-children: [
-FloatingActionButton(
-onPressed: vm.increment,
-child: const Icon(Icons.add),
-),
-const SizedBox(height: 8),
-FloatingActionButton(
-onPressed: vm.decrement,
-child: const Icon(Icons.remove),
-),
-],
-),
-);
-}
+  @override
+  Widget build(BuildContext context, CounterViewModel viewModel, Widget? child) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Counter')),
+      body: Center(
+        child: viewModel.count.listen(
+          builder: (context, count, _) =>
+              Text(
+                '$count',
+                style: Theme
+                    .of(context)
+                    .textTheme
+                    .displayLarge,
+              ),
+        ),
+      ),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton(
+            onPressed: viewModel.increment,
+            child: const Icon(Icons.add),
+          ),
+          const SizedBox(height: 8),
+          FloatingActionButton(
+            onPressed: viewModel.decrement,
+            child: const Icon(Icons.remove),
+          ),
+        ],
+      ),
+    );
+  }
 }
 ```
 That's it! Your counter app is ready with clean separation between UI and logic.
@@ -121,7 +132,7 @@ name.update((current) => current.toUpperCase());
 
 // Listen in UI
 count.listen(
-builder: (context, value, _) => Text('$value'),
+  builder: (context, value, _) => Text('$value'),
 )
 ```
 ### ReactiveFuture\<T\>
@@ -129,19 +140,20 @@ builder: (context, value, _) => Text('$value'),
 Handle async operations with built-in loading/error states:
 ```dart
 class UserViewModel extends ViewModel {
-final user = ReactiveFuture<User>.idle();
+  final user = ReactiveFuture<User>.idle();
 
-Future<void> loadUser(String id) async {
-await user.run(() => userRepository.getUser(id));
-}
+  // Call loadUser() from init(), button press, or other triggers
+  Future<void> loadUser(String id) async {
+    await user.run(() => userRepository.getUser(id));
+  }
 }
 
 // In the view
 vm.user.listenWhen(
-idle: () => const Text('Enter ID to search'),
-loading: () => const CircularProgressIndicator(),
-data: (user) => UserCard(user: user),
-error: (e, _) => Text('Error: $e'),
+  idle: () => const Text('Enter ID to search'),
+  loading: () => const CircularProgressIndicator(),
+  data: (user) => UserCard(user: user),
+  error: (e, _) => Text('Error: $e'),
 )
 ```
 ### ReactiveStream\<T\>
@@ -149,25 +161,28 @@ error: (e, _) => Text('Error: $e'),
 React to stream events in real-time:
 ```dart
 class ChatViewModel extends ViewModel {
-final messages = ReactiveStream<Message>.idle();
+  final messages = ReactiveStream<Message>.idle();
 
-void connect(String roomId) {
-messages.bind(chatService.getMessages(roomId));
-}
+  // Call connect() from init(), button press, or other triggers
+  void connect(String roomId) {
+    // chatService.getMessages() returns a Stream<Message> that emits new messages
+    // We bind this stream to our reactive stream to handle its events
+    messages.bind(chatService.getMessages(roomId));
+  }
 
-@override
-void dispose() {
-messages.cancel();
-super.dispose();
-}
+  @override
+  void dispose() {
+    messages.cancel();
+    super.dispose();
+  }
 }
 
 // In the view
 vm.messages.listenWhen(
-loading: () => const Text('Connecting...'),
-data: (message) => MessageBubble(message: message),
-error: (e, _) => const Text('Disconnected'),
-done: (_) => const Text('Chat ended'),
+  loading: () => const Text('Connecting...'),
+  data: (message) => MessageBubble(message: message),
+  error: (e, _) => const Text('Disconnected'),
+  done: (_) => const Text('Chat ended'),
 )
 ```
 ### Reactive Collections
@@ -194,54 +209,57 @@ selectedIds.remove('item_2');
 
 Perform multiple updates with a single notification:
 ```dart
+// Only one rebuild will be triggered!
 todos.batch((list) {
-list.add(Todo('Task 1'));
-list.add(Todo('Task 2'));
-list.removeAt(0);
-list.sort((a, b) => a.priority.compareTo(b.priority));
+  list.add(Todo('Task 1'));
+  list.add(Todo('Task 2'));
+  list.removeAt(0);
+  list.sort((a, b) => a.priority.compareTo(b.priority));
 });
-// Only one rebuild triggered!
 ```
 ---
 
 ## 🎯 AsyncState
 
 All async properties use the `AsyncState` sealed class for type-safe state handling:
-```dart
-sealed class AsyncState<T> {
-AsyncIdle      // Operation not started
-AsyncLoading   // Operation in progress
-AsyncData      // Success with data
-AsyncError     // Error with details
-StreamDone     // Stream completed
-}
-```
+
+| State          | Description           |
+|----------------|-----------------------|
+| `AsyncIdle`    | Operation not started |
+| `AsyncLoading` | Operation in progress |
+| `AsyncData`    | Success with data     |
+| `AsyncError`   | Error with details    |
+| `StreamDone`   | Stream completed      |
+
 ### Pattern Matching
 ```dart
 // Exhaustive matching
 state.when(
-idle: () => const Text('Ready'),
-loading: () => const CircularProgressIndicator(),
-data: (user) => Text(user.name),
-error: (e, stackTrace) => Text('Error: $e'),
+  idle: () => const Text('Ready'),
+  loading: () => const CircularProgressIndicator(),
+  data: (user) => Text(user.name),
+  error: (e, stackTrace) => Text('Error: $e'),
+  // Optional for streams
+  done: (lastMsg) => Text('Stream ended. Last: ${lastMsg?.content}'),
 );
 
 // Partial matching
 state.maybeWhen(
-error: (e, _) => showErrorSnackbar(e),
-orElse: () {},
+  error: (e, _) => showErrorSnackbar(e),
+  orElse: () {},
 );
 
 // With previous data access
 state.whenWithPrevious(
-loading: (previousData) => previousData != null
-? RefreshIndicator(child: UserCard(previousData))
-: const LoadingSpinner(),
-data: (user) => UserCard(user),
-error: (e, _, previousData) => ErrorWithRetry(
-error: e,
-cachedData: previousData,
-),
+  idle: () => const Text('Ready'),
+  loading: (previousData) => previousData != null
+    ? RefreshIndicator(child: UserCard(previousData))
+    : const LoadingSpinner(),
+  data: (user) => UserCard(user),
+  error: (e, _, previousData) => ErrorWithRetry(
+    error: e,
+    cachedData: previousData,
+  ),
 );
 ```
 ---
@@ -251,18 +269,18 @@ cachedData: previousData,
 Optimize performance by only rebuilding when specific values change:
 ```dart
 // Only rebuilds when email changes, not when name or age changes
-vm.user.select(
-selector: (user) => user.email,
-builder: (context, email) => Text(email),
+viewModel.user.select(
+  selector: (user) => user.email,
+  builder: (context, email) => Text(email),
 )
 
 // Select multiple values using records
-vm.user.select(
-selector: (user) => (user.firstName, user.lastName),
-builder: (context, names) {
-final (first, last) = names;
-return Text('$first $last');
-},
+viewModel.user.select(
+  selector: (user) => (user.firstName, user.lastName),
+  builder: (context, names) {
+    final (first, last) = names;
+    return Text('$first $last');
+  },
 )
 ```
 ---
@@ -272,10 +290,14 @@ return Text('$first $last');
 Listen to multiple reactive properties at once:
 ```dart
 MultiReactiveBuilder(
-properties: [vm.firstName, vm.lastName, vm.age],
-builder: (context, _) => Text(
-'${vm.firstName.value} ${vm.lastName.value}, ${vm.age.value}',
-),
+  properties: [
+    viewModel.firstName, 
+    viewModel.lastName, 
+    viewModel.age,
+  ],
+  builder: (context, _) => Text(
+    '${vm.firstName.value} ${vm.lastName.value}, ${vm.age.value}',
+  ),
 )
 ```
 ---
@@ -285,29 +307,33 @@ builder: (context, _) => Text(
 ### Lifecycle Hooks
 ```dart
 class UserProfileView extends ViewHandler<UserProfileViewModel> {
-const UserProfileView({super.key, required this.userId});
+  const UserProfileView({super.key, required this.userId});
 
-final String userId;
+  final String userId;
 
-@override
-UserProfileViewModel viewModelFactory() => UserProfileViewModel();
+  @override
+  UserProfileViewModel viewModelFactory() => UserProfileViewModel();
 
-@override
-void init(UserProfileViewModel vm) {
-super.init(vm);
-vm.loadUser(userId); // Called when view is mounted
-}
+  @override
+  void init(UserProfileViewModel viewModel) {
+    super.init(viewModel);
+    // This lifecycle method is also present in the ViewModel 
+    // and do not need to be overridden here
+    viewModel.loadUser(userId); // Called when view is mounted
+  }
 
-@override
-void dispose(UserProfileViewModel vm) {
-vm.cancelSubscriptions(); // Called when view is unmounted
-super.dispose(vm);
-}
+  @override
+  void dispose(UserProfileViewModel viewModel) {
+    // This lifecycle method is also present in the ViewModel 
+    // and do not need to be overridden here
+    viewModel.cancelSubscriptions(); // Called when view is unmounted
+    super.dispose(viewModel);
+  }
 
-@override
-Widget build(BuildContext context, UserProfileViewModel vm, Widget? child) {
-// ...
-}
+  @override
+  Widget build(BuildContext context, UserProfileViewModel viewModel, Widget? child) {
+    // ...
+  }
 }
 ```
 ### Child Optimization
@@ -315,25 +341,25 @@ Widget build(BuildContext context, UserProfileViewModel vm, Widget? child) {
 Cache expensive widgets that don't need rebuilding:
 ```dart
 class TodoListView extends ViewHandler<TodoListViewModel> {
-@override
-Widget? child(BuildContext context) {
-// This widget won't rebuild when ViewModel changes
-return const ExpensiveHeader();
-}
+  @override
+  Widget? child(BuildContext context) {
+    // This widget won't rebuild when ViewModel changes
+    return const ExpensiveHeader();
+  }
 
-@override
-Widget build(BuildContext context, TodoListViewModel vm, Widget? child) {
-return Column(
-children: [
-child!, // Reused across rebuilds
-Expanded(
-child: vm.todos.listen(
-builder: (context, todos, _) => TodoList(todos: todos),
-),
-),
-],
-);
-}
+  @override
+  Widget build(BuildContext context, TodoListViewModel vm, Widget? child) {
+    return Column(
+      children: [
+        child!, // Reused across rebuilds
+        Expanded(
+          child: vm.todos.listen(
+            builder: (context, todos, _) => TodoList(todos: todos),
+          ),
+        ),
+      ],
+    );
+  }
 }
 ```
 ### Navigation Control
@@ -341,21 +367,21 @@ builder: (context, todos, _) => TodoList(todos: todos),
 Control back navigation with PopScope integration:
 ```dart
 class FormView extends ViewHandler<FormViewModel> {
-@override
-bool get canPop => false; // Prevent back navigation
+  @override
+  bool get canPop => false; // Prevent back navigation
 
-@override
-PopInvokedContextWithResultCallback<dynamic>? get onPopInvokedWithResult =>
-(context, didPop, result) {
-if (!didPop) {
-showDialog(
-context: context,
-builder: (_) => const DiscardChangesDialog(),
-);
-}
-};
+  @override
+  PopInvokedContextWithResultCallback<dynamic>? get onPopInvokedWithResult =>
+          (context, didPop, result) {
+        if (!didPop) {
+          showDialog(
+            context: context,
+            builder: (_) => const DiscardChangesDialog(),
+          );
+        }
+      };
 
-// ...
+  // ...
 }
 ```
 ---
@@ -369,22 +395,22 @@ Inspect your ViewModels in real-time with the built-in DevTools extension.
 1. Initialize in your app's `main()`:
 ```dart
 void main() {
-MvvmDevToolsExtension.init();
-runApp(const MyApp());
+  MvvmDevToolsExtension.init();
+  runApp(const MyApp());
 }
 ```
 2. Override `debugFillProperties` in your ViewModels:
 ```dart
 class MyViewModel extends ViewModel {
-final count = Reactive<int>(0);
-final user = ReactiveFuture<User>.idle();
+  final count = Reactive<int>(0);
+  final user = ReactiveFuture<User>.idle();
 
-@override
-void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-super.debugFillProperties(properties);
-properties.add(DiagnosticsProperty('count', count));
-properties.add(DiagnosticsProperty('user', user));
-}
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DiagnosticsProperty('count', count));
+    properties.add(DiagnosticsProperty('user', user));
+  }
 }
 ```
 3. Open DevTools and look for the **MVVM Core** tab!
@@ -400,8 +426,8 @@ properties.add(DiagnosticsProperty('user', user));
 ViewModels are easy to test in isolation:
 ```dart
 void main() {
-group('CounterViewModel', () {
-late CounterViewModel vm;
+  group('CounterViewModel', () {
+    late CounterViewModel vm;
 
     setUp(() {
       vm = CounterViewModel();
@@ -428,11 +454,11 @@ late CounterViewModel vm;
 
       expect(notifications, equals(1));
     });
-});
+  });
 
-group('UserViewModel', () {
-late UserViewModel vm;
-late MockUserRepository mockRepository;
+  group('UserViewModel', () {
+    late UserViewModel vm;
+    late MockUserRepository mockRepository;
 
     setUp(() {
       mockRepository = MockUserRepository();
@@ -454,7 +480,7 @@ late MockUserRepository mockRepository;
       expect(vm.user.value.hasData, isTrue);
       expect(vm.user.data?.name, equals('John'));
     });
-});
+  });
 }
 ```
 ---
@@ -480,65 +506,70 @@ late MockUserRepository mockRepository;
 ```dart
 // Before
 class _MyWidgetState extends State<MyWidget> {
-int count = 0;
+  int count = 0;
 
-void increment() => setState(() => count++);
+  void increment() => setState(() => count++);
 
-@override
-Widget build(BuildContext context) {
-return Text('$count');
-}
+  @override
+  Widget build(BuildContext context) {
+    return Text('$count');
+  }
 }
 
 // After
 class CounterViewModel extends ViewModel {
-final count = Reactive<int>(0);
-void increment() => count.value++;
+  final count = Reactive<int>(0);
+
+  void increment() => count.value++;
 }
 
 class CounterView extends ViewHandler<CounterViewModel> {
-@override
-CounterViewModel viewModelFactory() => CounterViewModel();
+  @override
+  CounterViewModel viewModelFactory() => CounterViewModel();
 
-@override
-Widget build(BuildContext context, CounterViewModel vm, Widget? child) {
-return vm.count.listen(
-builder: (context, count, _) => Text('$count'),
-);
-}
+  @override
+  Widget build(BuildContext context, CounterViewModel vm, Widget? child) {
+    return vm.count.listen(
+      builder: (context, count, _) => Text('$count'),
+    );
+  }
 }
 ```
 ### From Provider/ChangeNotifier
 ```dart
 // Before
 class CounterProvider extends ChangeNotifier {
-int _count = 0;
-int get count => _count;
+  int _count = 0;
 
-void increment() {
-_count++;
-notifyListeners();
-}
+  int get count => _count;
+
+  void increment() {
+    _count++;
+    notifyListeners();
+  }
 }
 
 // After
 class CounterViewModel extends ViewModel {
-final count = Reactive<int>(0);
-void increment() => count.value++;
+  final count = Reactive<int>(0);
+
+  void increment() => count.value++;
 }
 ```
 ### From Bloc/Cubit
 ```dart
 // Before
 class CounterCubit extends Cubit<int> {
-CounterCubit() : super(0);
-void increment() => emit(state + 1);
+  CounterCubit() : super(0);
+
+  void increment() => emit(state + 1);
 }
 
 // After
 class CounterViewModel extends ViewModel {
-final count = Reactive<int>(0);
-void increment() => count.value++;
+  final count = Reactive<int>(0);
+
+  void increment() => count.value++;
 }
 ```
 ---
@@ -548,86 +579,89 @@ void increment() => count.value++;
 ### Todo App
 ```dart
 class TodoViewModel extends ViewModel {
-final todos = ReactiveList<Todo>([]);
-final filter = Reactive<TodoFilter>(TodoFilter.all);
+  final todos = ReactiveList<Todo>([]);
+  final filter = Reactive<TodoFilter>(TodoFilter.all);
 
-List<Todo> get filteredTodos => switch (filter.value) {
-TodoFilter.all => todos.value,
-TodoFilter.active => todos.where((t) => !t.completed).toList(),
-TodoFilter.completed => todos.where((t) => t.completed).toList(),
-};
+  List<Todo> get filteredTodos =>
+      switch (filter.value) {
+        TodoFilter.all => todos.value,
+        TodoFilter.active => todos.where((t) => !t.completed).toList(),
+        TodoFilter.completed => todos.where((t) => t.completed).toList(),
+      };
 
-void addTodo(String title) {
-todos.add(Todo(id: uuid(), title: title));
-}
+  void addTodo(String title) {
+    todos.add(Todo(id: uuid(), title: title));
+  }
 
-void toggleTodo(String id) {
-final index = todos.indexWhere((t) => t.id == id);
-if (index != -1) {
-todos[index] = todos[index].copyWith(
-completed: !todos[index].completed,
-);
-}
-}
+  void toggleTodo(String id) {
+    final index = todos.indexWhere((t) => t.id == id);
+    if (index != -1) {
+      todos[index] = todos[index].copyWith(
+        completed: !todos[index].completed,
+      );
+    }
+  }
 
-void deleteTodo(String id) {
-todos.removeWhere((t) => t.id == id);
-}
+  void deleteTodo(String id) {
+    todos.removeWhere((t) => t.id == id);
+  }
 
-void clearCompleted() {
-todos.removeWhere((t) => t.completed);
-}
+  void clearCompleted() {
+    todos.removeWhere((t) => t.completed);
+  }
 }
 ```
 ### Authentication Flow
 ```dart
 class AuthViewModel extends ViewModel {
-final authState = ReactiveFuture<User?>.idle();
-final isLoggedIn = Reactive<bool>(false);
+  final authState = ReactiveFuture<User?>.idle();
+  final isLoggedIn = Reactive<bool>(false);
 
-Future<void> login(String email, String password) async {
-final user = await authState.run(
-() => authService.login(email, password),
-);
+  Future<void> login(String email, String password) async {
+    final user = await authState.run(
+          () => authService.login(email, password),
+    );
 
     if (user != null) {
       isLoggedIn.value = true;
     }
-}
+  }
 
-Future<void> logout() async {
-await authService.logout();
-isLoggedIn.value = false;
-authState.reset();
-}
+  Future<void> logout() async {
+    await authService.logout();
+    isLoggedIn.value = false;
+    authState.reset();
+  }
 }
 ```
 ### Search with Debounce
 ```dart
 class SearchViewModel extends ViewModel {
-final query = Reactive<String>('');
-final results = ReactiveFuture<List<Item>>.idle();
+  final query = Reactive<String>('');
+  final results = ReactiveFuture<List<Item>>.idle();
 
-Timer? _debounceTimer;
+  Timer? _debounceTimer;
 
-void onQueryChanged(String value) {
-query.value = value;
+  void onQueryChanged(String value) {
+    query.value = value;
 
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 300), () {
       if (value.isEmpty) {
         results.reset();
       } else {
+        // Calling run() while a previous operation
+        // is in progress will cancel the previous run
         results.run(() => searchService.search(value));
       }
     });
-}
+  }
 
-@override
-void dispose() {
-_debounceTimer?.cancel();
-super.dispose();
-}
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
 }
 ```
 ---
@@ -657,18 +691,6 @@ See the [API documentation](https://pub.dev/documentation/mvvm_core/latest/) for
 | `ReactiveBuilder<T>` | Rebuilds when a single property changes |
 | `SelectReactiveBuilder<T, R>` | Rebuilds only when selected value changes |
 | `MultiReactiveBuilder` | Rebuilds when any of multiple properties change |
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please read our [contributing guidelines](CONTRIBUTING.md) before submitting a pull request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ---
 
