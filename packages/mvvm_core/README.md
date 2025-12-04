@@ -31,7 +31,7 @@ A simple yet powerful MVVM state management library for Flutter. Built on Flutte
 Add `mvvm_core` to your `pubspec.yaml`:
 ```yaml
 dependencies:
-  mvvm_core: ^1.0.0
+  mvvm_core: ^1.1.0
 ```
 Then run:
 ```bash
