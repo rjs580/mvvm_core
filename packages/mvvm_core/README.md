@@ -7,7 +7,9 @@
 A simple yet powerful MVVM state management library for Flutter. Built on Flutter's native primitives with zero external dependencies.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/rjs580/mvvm_core/main/assets/mvvm_core_architecture.svg" alt="MVVM Architecture" width="250"/>
+  <img src="https://raw.githubusercontent.com/rjs580/mvvm_core/main/assets/mvvm_core_architecture.svg" alt="MVVM Architecture" width="400"/>
+  <br/>
+  <em>MVVM Architecture</em>
 </p>
 
 ---
@@ -413,7 +415,7 @@ Inspect your ViewModels in real-time with the built-in DevTools extension.
     ```
 3. Open DevTools and look for the **MVVM Core** tab!
     <p align="center">
-        <img src="https://raw.githubusercontent.com/rjs580/mvvm_core/main/assets/devtools_screenshot.png" alt="DevTools Extension" width="700"/>
+        <img src="https://raw.githubusercontent.com/rjs580/mvvm_core/main/assets/devtools_screenshot.png" alt="DevTools Extension" width="800"/>
     </p>
 
 ---
@@ -703,6 +705,7 @@ See the [API documentation](https://pub.dev/documentation/mvvm_core/latest/) for
   <a href="https://github.com/rjs580/mvvm_core">
     <img src="https://img.shields.io/github/stars/rjs580/mvvm_core?style=social" alt="GitHub stars"/>
   </a>
+  &nbsp;&nbsp;&nbsp;
   <a href="https://pub.dev/packages/mvvm_core">
     <img src="https://img.shields.io/pub/likes/mvvm_core" alt="Pub likes"/>
   </a>
