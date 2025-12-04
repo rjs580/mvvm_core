@@ -371,26 +371,34 @@ class _ExtensionHomeState extends State<ExtensionHome> {
     final vm = _selectedViewModel!;
     final properties = List<Map<String, dynamic>>.from(vm['properties']);
     final mounted = vm['mounted'] as bool;
+    final rebuildCount = vm['rebuildCount'] as int? ?? 0;
 
     return Column(
       children: [
         _buildHeader(
           vm['type'] as String,
           isDark,
-          trailing: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: mounted ? Colors.green : Colors.red,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              mounted ? 'MOUNTED' : 'DISPOSED',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildRebuildBadge(rebuildCount, isDark),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: mounted ? Colors.green : Colors.red,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  mounted ? 'MOUNTED' : 'DISPOSED',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
           onRefresh: () => _selectViewModel(vm),
         ),
@@ -415,6 +423,42 @@ class _ExtensionHomeState extends State<ExtensionHome> {
                 ),
         ),
       ],
+    );
+  }
+
+  Widget _buildRebuildBadge(int count, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.orange.withValues(alpha: 0.2)
+            : Colors.orange.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: isDark
+              ? Colors.orange.withValues(alpha: 0.5)
+              : Colors.orange.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.refresh,
+            size: 12,
+            color: isDark ? Colors.orange[300] : Colors.orange[800],
+          ),
+          const SizedBox(width: 4),
+          Text(
+            'Rebuilds: $count',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.orange[300] : Colors.orange[800],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -471,8 +515,10 @@ class _ExtensionHomeState extends State<ExtensionHome> {
     final value = prop['value'] as String;
     final items = prop['items'] as List?;
     final entries = prop['entries'] as List?;
+    final rebuildCount = prop['rebuildCount'] as int?;
 
     final bool isCollection = items != null || entries != null;
+    final bool isMissingName = name.startsWith('hash_');
 
     IconData icon;
     Color color;
@@ -502,22 +548,17 @@ class _ExtensionHomeState extends State<ExtensionHome> {
         icon: icon,
         color: color,
         isDark: isDark,
+        rebuildCount: rebuildCount,
+        isMissingName: isMissingName,
       );
     }
 
     // Use ExpansionTile for collections
     return ExpansionTile(
       leading: Icon(icon, size: 18, color: color),
-      title: Text(
-        name,
-        style: TextStyle(
-          fontFamily: 'monospace',
-          fontSize: 13,
-          color: isDark ? Colors.white : Colors.black87,
-        ),
-      ),
+      title: _buildPropertyName(name, isMissingName, isDark),
       subtitle: Text(
-        '$type • $value',
+        '$type • $value${rebuildCount != null ? ' • Rebuilds: $rebuildCount' : ''}',
         style: TextStyle(
           fontFamily: 'monospace',
           fontSize: 11,
@@ -531,6 +572,37 @@ class _ExtensionHomeState extends State<ExtensionHome> {
     );
   }
 
+  Widget _buildPropertyName(String name, bool isMissingName, bool isDark) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (isMissingName)
+          Tooltip(
+            message:
+                'Property name not set.\n'
+                'Add a name in debugFillProperties():\n'
+                "properties.add(DiagnosticsProperty('myName', myProperty));",
+            child: Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: Icon(
+                Icons.warning_amber_rounded,
+                size: 16,
+                color: Colors.amber[isDark ? 400 : 700],
+              ),
+            ),
+          ),
+        Text(
+          name,
+          style: TextStyle(
+            fontFamily: 'monospace',
+            fontSize: 13,
+            color: isDark ? Colors.white : Colors.black87,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildSimplePropertyTile({
     required String name,
     required String type,
@@ -538,6 +610,8 @@ class _ExtensionHomeState extends State<ExtensionHome> {
     required IconData icon,
     required Color color,
     required bool isDark,
+    int? rebuildCount,
+    bool isMissingName = false,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -553,8 +627,23 @@ class _ExtensionHomeState extends State<ExtensionHome> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 4,
                   children: [
+                    if (isMissingName)
+                      Tooltip(
+                        message:
+                            'Property name not set.\n'
+                            'Add a name in debugFillProperties():\n'
+                            "properties.add(DiagnosticsProperty('myName', myProperty));",
+                        child: Icon(
+                          Icons.warning_amber_rounded,
+                          size: 16,
+                          color: Colors.amber[isDark ? 400 : 700],
+                        ),
+                      ),
                     Text(
                       name,
                       style: TextStyle(
@@ -564,7 +653,6 @@ class _ExtensionHomeState extends State<ExtensionHome> {
                         color: isDark ? Colors.white : Colors.black87,
                       ),
                     ),
-                    const SizedBox(width: 8),
                     Text(
                       type,
                       style: TextStyle(
@@ -573,6 +661,48 @@ class _ExtensionHomeState extends State<ExtensionHome> {
                         color: isDark ? Colors.grey[600] : Colors.grey[500],
                       ),
                     ),
+                    if (rebuildCount != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.blue.withValues(alpha: 0.2)
+                              : Colors.blue.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: isDark
+                                ? Colors.blue.withValues(alpha: 0.4)
+                                : Colors.blue.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.refresh,
+                              size: 10,
+                              color: isDark
+                                  ? Colors.blue[300]
+                                  : Colors.blue[700],
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              'Rebuilds: $rebuildCount',
+                              style: TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                                color: isDark
+                                    ? Colors.blue[300]
+                                    : Colors.blue[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 4),

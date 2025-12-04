@@ -1,3 +1,14 @@
+## 1.1.0
+
+### Added
+
+- **Rebuild Tracking** — DevTools extension now displays rebuild counts for ViewModels and reactive properties
+- Warning indicator in DevTools for properties missing a name in `debugFillProperties()`
+
+### Changed
+
+- Improved documentation
+
 ## 1.0.0
 
 - Initial release

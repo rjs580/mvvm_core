@@ -123,6 +123,7 @@ class MvvmDevToolsExtension {
     ViewModel vm, {
     bool detailed = false,
   }) {
+    final entry = _viewModels[id];
     final properties = <Map<String, dynamic>>[];
 
     // Use Flutter's diagnostics system to get properties
@@ -130,15 +131,25 @@ class MvvmDevToolsExtension {
     vm.debugFillProperties(builder);
 
     for (final prop in builder.properties) {
-      if (prop.name == null) continue;
+      final propData = _serializeProperty(prop, detailed: detailed);
 
-      properties.add(_serializeProperty(prop, detailed: detailed));
+      // Add rebuild count for reactive properties using hashCode
+      if (entry != null && prop is DiagnosticsProperty) {
+        final value = prop.value;
+        if (value is ReactiveProperty) {
+          propData['rebuildCount'] =
+              entry.propertyRebuildCounts[value.hashCode] ?? 0;
+        }
+      }
+
+      properties.add(propData);
     }
 
     return {
       'id': id,
       'type': vm.runtimeType.toString(),
       'mounted': vm.mounted,
+      'rebuildCount': entry?.viewModelRebuildCount ?? 0,
       'properties': properties,
     };
   }
@@ -148,7 +159,7 @@ class MvvmDevToolsExtension {
     bool detailed = false,
   }) {
     final propData = <String, dynamic>{
-      'name': prop.name,
+      'name': prop.name ?? 'hash_${prop.hashCode}',
       'type': _getPropertyType(prop),
       'value': _getPropertyValue(prop),
     };
@@ -283,9 +294,16 @@ class _ViewModelEntry {
   final int id;
   final List<_ListenerRegistration> _listeners = [];
 
+  /// Number of times the ViewModel has notified listeners.
+  int viewModelRebuildCount = 0;
+
+  /// Rebuild counts for each reactive property, keyed by property name.
+  final Map<int, int> propertyRebuildCounts = {};
+
   void _setupListeners(ViewModel vm) {
     // Listen to ViewModel changes
     void onViewModelChanged() {
+      viewModelRebuildCount++;
       MvvmDevToolsExtension._postUpdateEvent(viewModelId: id);
     }
 
@@ -300,7 +318,12 @@ class _ViewModelEntry {
       if (prop is DiagnosticsProperty) {
         final value = prop.value;
         if (value is ReactiveProperty) {
+          final hash = value.hashCode;
+          propertyRebuildCounts[hash] = 0;
+
           void onPropertyChanged() {
+            propertyRebuildCounts[hash] =
+                (propertyRebuildCounts[hash] ?? 0) + 1;
             MvvmDevToolsExtension._postUpdateEvent(viewModelId: id);
           }
 

@@ -1,5 +1,5 @@
-name: mvvm_core
+name: MVVM Core
 issueTracker: https://github.com/rjs580/mvvm_core/issues
-version: 1.0.0
+version: 1.1.0
 materialIconCodePoint: '0xe090'
 requiresConnection: true

@@ -6,6 +6,10 @@
 
 A simple yet powerful MVVM state management library for Flutter. Built on Flutter's native primitives with zero external dependencies.
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/rjs580/mvvm_core/main/assets/mvvm_core_architecture.svg" alt="MVVM Architecture" width="250"/>
+</p>
+
 ---
 
 ## ✨ Features
@@ -388,21 +392,29 @@ Inspect your ViewModels in real-time with the built-in DevTools extension.
 
 ### Setup
 
-1. Override `debugFillProperties` in your ViewModels:
-```dart
-class MyViewModel extends ViewModel {
-  final count = Reactive<int>(0);
-  final user = ReactiveFuture<User>.idle();
-
-  @override
-  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
-    properties.add(DiagnosticsProperty('count', count));
-    properties.add(DiagnosticsProperty('user', user));
-  }
-}
-```
-2. Open DevTools and look for the **MVVM Core** tab!
+1. Enable the MVVM Core DevTools Extension:
+    - In your Flutter app, navigate to Flutter DevTools
+    - Go to Settings (<img src="https://raw.githubusercontent.com/flutter/devtools/master/packages/devtools_app/icons/app_bar/devtools_extensions.png" alt="DevTools Extension Icon" width="20"/>)
+    - Enable the "MVVM Core" extension
+    
+2. Override `debugFillProperties` in your ViewModels:
+    ```dart
+    class MyViewModel extends ViewModel {
+      final count = Reactive<int>(0);
+      final user = ReactiveFuture<User>.idle();
+    
+      @override
+      void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+        super.debugFillProperties(properties);
+        properties.add(DiagnosticsProperty('count', count));
+        properties.add(DiagnosticsProperty('user', user));
+      }
+    }
+    ```
+3. Open DevTools and look for the **MVVM Core** tab!
+    <p align="center">
+        <img src="https://raw.githubusercontent.com/rjs580/mvvm_core/main/assets/devtools_screenshot.png" alt="DevTools Extension" width="700"/>
+    </p>
 
 ---
 

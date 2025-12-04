@@ -1,16 +1,36 @@
-# mvvm_core_devtools_extension
+# MVVM Core DevTools Extension
 
-A new Flutter project.
+A Flutter DevTools extension for inspecting and debugging [mvvm_core](https://pub.dev/packages/mvvm_core) ViewModels.
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter application.
+- 📋 **View all active ViewModels** — See all registered ViewModels in your app
+- 🔍 **Inspect properties** — View reactive properties and their current values
+- 🔄 **Rebuild tracking** — Monitor how many times ViewModels and properties have updated
+- ⚡ **Live updates** — Property changes reflect in real-time
+- ⚠️ **Diagnostics warnings** — Get notified about missing property names
 
-A few resources to get you started if this is your first Flutter project:
+## Usage
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+1. Add `mvvm_core` to your Flutter app
+2. Override `debugFillProperties()` in your ViewModels to expose properties
+   ```dart
+   class MyViewModel extends ViewModel {
+     final count = Reactive<int>(0);
+     final user = ReactiveFuture<User>.idle();
+   
+     @override
+     void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+       super.debugFillProperties(properties);
+       properties.add(DiagnosticsProperty('count', count));
+       properties.add(DiagnosticsProperty('user', user));
+     }
+   }
+    ```
+3. Open Flutter DevTools and navigate to the **MVVM Core** tab
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Links
+
+- [mvvm_core on pub.dev](https://pub.dev/packages/mvvm_core)
+- [GitHub Repository](https://github.com/rjs580/mvvm_core)
+- [Report Issues](https://github.com/rjs580/mvvm_core/issues)
