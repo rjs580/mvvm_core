@@ -1,3 +1,8 @@
+## 1.1.1
+
+### Fixed
+- Included prebuilt DevTools extension assets in the published package (the previous release missed the build step), ensuring the extension loads correctly after install.
+
 ## 1.1.0
 
 ### Added
